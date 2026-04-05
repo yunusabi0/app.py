@@ -4,33 +4,34 @@ import re
 import random
 import string
 
-st.set_page_config(page_title="GanoPort | Akdeniz Uni Kesin Çözüm", page_icon="🎓")
+st.set_page_config(page_title="GanoPort | Akdeniz Uni Kesin Onay", page_icon="🎓")
 
 def gano_bul(pdf_dosyasi):
     try:
         with pdfplumber.open(pdf_dosyasi) as pdf:
-            # Akdeniz Uni formatında güncel GANO her zaman ilk sayfadaki kimlik kısmındadır.
+            # Akdeniz Uni formatında resmi GANO her zaman ilk sayfadaki üst tabloda yer alır.
             first_page = pdf.pages[0]
             text = first_page.extract_text()
             
             if text:
-                # Sayısal işlemler için virgülleri noktaya çevir (Örn: 2,77 -> 2.77) 
+                # Virgülleri noktaya çevirerek standart hale getir (2,77 -> 2.77)
                 text = text.replace(',', '.')
                 
-                # KRİTİK FİLTRE: Doğrudan resmi özet satırını hedef alıyoruz.
-                # Bu satır Alp'te ": 150/2.77/75.4" ve Yunus'ta ": 150/3.17/83.4" şeklindedir.
-                # Regex açıklaması: İki eğik çizgi (/) arasındaki 0-4 arası rakamı yakalar.
-                ozel_kalip = re.search(r"Top\.Krd/GANO/Yüzlük Not\s*:\s*\d+/([0-4][\.]\d{1,2})/", text)
+                # KRİTİK FİLTRE: Doğrudan "Top.Krd/GANO/Yüzlük Not" satırını hedef alıyoruz.
+                # Alp'te ": 150/2.77/75.4" ve Yunus'ta ": 150/3.17/83.4" olan merkezi veriyi çeker.
+                # Regex: İki adet '/' işareti arasındaki 0-4 arası rakamı yakalar.
+                resmi_satir = re.search(r"Top\.Krd/GANO/Yüzlük Not\s*:\s*\d+/([0-4][\.]\d{1,2})/", text)
                 
-                if ozel_kalip:
-                    return float(ozel_kalip.group(1))
+                if resmi_satir:
+                    return float(resmi_satir.group(1))
                 
-                # EĞER YUKARIDAKİ BULUNAMAZSA (Farklı Versiyon): 
-                # "GANO" kelimesini ara ama "DNO" (Dönem Notu) olanları ele.
-                temiz_ganos = re.findall(r"(?<!D)GANO\s*[:\s]*([0-4][\.]\d{1,2})", text, re.IGNORECASE)
-                if temiz_ganos:
-                    # İlk sayfadaki ilk GANO genellikle en resmi olandır.
-                    return float(temiz_ganos[0])
+                # YEDEK PLAN: Eğer yukarıdaki spesifik yapı bulunamazsa (farklı PDF motoru),
+                # Sadece "GANO" kelimesini ara ama "DNO" olanları (Dönem Notu) kesinlikle ele.
+                # Negative Lookbehind (?<!D) kullanarak DNO kelimesine takılmasını engelliyoruz.
+                temiz_liste = re.findall(r"(?<!D)GANO\s*[:\s]*([0-4][\.]\d{1,2})", text, re.IGNORECASE)
+                if temiz_liste:
+                    # İlk sayfadaki ilk GANO değeri her zaman resmi "Genel" ortalamadır.
+                    return float(temiz_liste[0])
                     
     except Exception:
         return None
@@ -46,11 +47,12 @@ st.subheader("Otomatik Transkript Doğrulama Sistemi")
 uploaded_file = st.file_uploader("Transkriptinizi (PDF) yükleyin", type="pdf")
 
 if uploaded_file is not None:
-    with st.spinner('Doğrulama yapılıyor...'):
+    with st.spinner('Resmi veriler doğrulanıyor...'):
         gano = gano_bul(uploaded_file)
         
     if gano is not None:
-        st.info(f"✅ Resmi GANO Doğrulandı: **{gano}**")
+        # Doğru değerin çekildiğini kullanıcıya gösteriyoruz
+        st.info(f"✅ Doğrulanan Resmi GANO: **{gano}**")
         
         indirim = 0
         if 2.50 <= gano < 3.00: indirim = 10
@@ -59,12 +61,12 @@ if uploaded_file is not None:
         
         if indirim > 0:
             st.balloons()
-            st.success(f"Tebrikler! %{indirim} indirim kodunuz oluşturuldu.")
+            st.success(f"Tebrikler! GANO puanınıza göre %{indirim} indirim kazandınız.")
             st.code(kod_uret(indirim), language="text")
         else:
             st.warning(f"GANO ({gano}) indirim alt sınırının (2.50) altında.")
     else:
-        st.error("GANO bilgisi tespit edilemedi. Lütfen orijinal PDF yükleyin.")
+        st.error("GANO bilgisi tespit edilemedi. Lütfen e-devlet formatında PDF yükleyin.")
 
 st.divider()
-st.caption("GanoPort - Toplumsal Destek Projesi © 2026")
+st.caption("GanoPort - Akdeniz Üniversitesi Toplumsal Destek Projesi © 2026")
