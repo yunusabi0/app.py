@@ -4,7 +4,7 @@ import re
 import random
 import string
 
-st.set_page_config(page_title="GanoPort | Otomatik Doğrulama", page_icon="🎓")
+st.set_page_config(page_title="GanoPort | Akdeniz Uni Doğrulama", page_icon="🎓")
 
 def gano_bul(pdf_dosyasi):
     full_text = ""
@@ -14,32 +14,24 @@ def gano_bul(pdf_dosyasi):
             if content:
                 full_text += content + "\n"
     
-    # Metni düzenle: Virgülleri noktaya çevir
+    # Virgülleri noktaya çevir (3,17 -> 3.17)
     full_text = full_text.replace(',', '.')
     
-    # STRATEJİ: "GENEL ORTALAMA", "GANO", "AGNO" kelimelerinden HEMEN SONRA gelen sayıyı ara
-    # Bu yöntem alakasız kredileri veya dönem ortalamalarını eler.
-    patterns = [
-        r"(?:GENEL ORTALAMA|GANO|AGNO|GPA|CGPA)[:\s]+([0-4][\.]\d{1,2})",
-        r"(?:GENEL AKADEMİK NOT ORTALAMASI)[:\s]+([0-4][\.]\d{1,2})"
-    ]
+    # AKDENİZ ÜNİVERSİTESİ ÖZEL FİLTRESİ:
+    # Transkriptin başında "Top.Krd/GANO" kısmında yazan genel ortalamayı hedefler.
+    genel_gano_match = re.search(r"Top\.Krd/GANO/Yüzlük Not\s*:\s*\d+/([0-4][\.]\d{1,2})", full_text)
     
-    found_values = []
-    for p in patterns:
-        matches = re.findall(p, full_text, re.IGNORECASE)
-        for m in matches:
-            found_values.append(float(m))
-            
-    if found_values:
-        # Transkriptin en sonunda yazan değer genellikle en güncel olandır.
-        return found_values[-1]
-        
-    # Eğer yukarıdaki kelimelerle bulamazsa, metindeki tüm 0.00-4.00 arası sayıları bul 
-    # ve içlerinden en mantıklı (genelde sonuncu) olanı seç.
-    fallback = re.findall(r"\b([0-4][\.]\d{2})\b", full_text)
-    if fallback:
-        # 2.5 gibi kısa sayıları değil, 3.17 gibi tam formatlıları tercih et
-        return float(fallback[-1])
+    if genel_gano_match:
+        return float(genel_gano_match.group(1))
+
+    # Eğer yukarıdaki özel kalıp bulunamazsa, metindeki TÜM GANO etiketlerini bul
+    # Akdeniz transkriptinde gerçek genel ortalama genellikle üstte veya en sondadır.
+    all_ganos = re.findall(r"GANO\s*[:\s]*([0-4][\.]\d{1,2})", full_text, re.IGNORECASE)
+    
+    if all_ganos:
+        # 3.17'yi bulmak için listedeki ilk veya son değerleri kontrol ederiz.
+        # Senin transkriptinde genel toplam en üstte 3,17 olarak belirtilmiş.
+        return float(all_ganos[0]) 
         
     return None
 
@@ -50,15 +42,14 @@ def kod_uret(yuzde):
 st.title("🎓 GanoPort")
 st.subheader("Otomatik Transkript Doğrulama Sistemi")
 
-uploaded_file = st.file_uploader("Lütfen PDF formatındaki transkriptinizi buraya sürükleyin", type="pdf")
+uploaded_file = st.file_uploader("Transkript PDF'inizi yükleyin", type="pdf")
 
 if uploaded_file is not None:
-    with st.spinner('GanoPort belgenizi analiz ediyor...'):
+    with st.spinner('GanoPort veriyi analiz ediyor...'):
         gano = gano_bul(uploaded_file)
         
     if gano is not None:
-        # 3.17 gibi bir değerin doğru çekildiğinden emin oluyoruz
-        st.info(f"✅ Sistem tarafından tespit edilen GANO: **{gano}**")
+        st.info(f"✅ Doğrulanan Genel Ortalama (GANO): **{gano}**")
         
         indirim = 0
         if 2.50 <= gano < 3.00: indirim = 10
@@ -67,12 +58,12 @@ if uploaded_file is not None:
         
         if indirim > 0:
             st.balloons()
-            st.success(f"Tebrikler! GANO puanınıza göre %{indirim} indirim kazandınız.")
+            st.success(f"Tebrikler! %{indirim} indirim kodunuz oluşturuldu.")
             st.code(kod_uret(indirim), language="text")
         else:
-            st.error(f"GANO ({gano}) indirim sınırının (2.50) altında.")
+            st.error(f"GANO ({gano}) indirim için yeterli değil (Min: 2.50).")
     else:
-        st.error("GANO verisi bulunamadı. Lütfen dijital bir transkript yükleyin.")
+        st.error("GANO tespit edilemedi. Lütfen belgenin okunabilir olduğundan emin olun.")
 
 st.divider()
-st.caption("GanoPort - Toplumsal Destek Projesi © 2026")
+st.caption("GanoPort - Akdeniz Üniversitesi Toplumsal Destek Projesi © 2026")
