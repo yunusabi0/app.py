@@ -17,12 +17,12 @@ def gano_bul(pdf_dosyasi):
     if not full_text:
         return None
 
-    # Virgülleri noktaya çevir (Örn: 2,77 -> 2.77) [cite: 6, 13]
+    # Virgülleri noktaya çevir (Örn: 2,77 -> 2.77)
     full_text = full_text.replace(',', '.')
     
     # STRATEJİ: Metindeki tüm GANO satırlarını bul.
-    # Akdeniz formatında "GANO: 3.17" veya "GANO: 3.20" şeklinde yazar[cite: 8, 11, 13].
-    # En güncel not her zaman belgenin en sonundaki GANO ibaresidir[cite: 13, 16].
+    # Akdeniz formatında "GANO: 3.17" veya "GANO: 3.20" şeklinde yazar.
+    # En güncel not her zaman belgenin en sonundaki GANO ibaresidir.
     
     # regex: 'GANO' kelimesini bul, aradaki boşlukları/noktalamaları geç ve sayıyı al.
     matches = re.findall(r"GANO\s*[:\s]*([0-4][\.]\d{1,2})", full_text, re.IGNORECASE)
