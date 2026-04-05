@@ -1,61 +1,55 @@
 import streamlit as st
+import pdfplumber
+import re
 import random
 import string
 
-# Sayfa Ayarları
-st.set_page_config(page_title="GanoPort | İndirim Portalı", page_icon="🎓")
+st.set_page_config(page_title="GanoPort | Otomatik Doğrulama", page_icon="🎓")
 
-# Tasarım ve Başlık
-st.title("🎓 GanoPort")
-st.subheader("Başarıyı Ödüllendiren Destek Platformu")
-st.write("Toplumsal Destek Projeleri kapsamında, akademik başarınızı yurt dışı hayallerinize dönüştürüyoruz.")
+def gano_bul(pdf_dosyasi):
+    """PDF içindeki metni tarayıp GANO'yu bulan fonksiyon"""
+    text = ""
+    with pdfplumber.open(pdf_dosyasi) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text()
+    
+    # PDF içinde "GANO", "GPA", "Genel Ortalama" gibi anahtar kelimelerin yanındaki sayıları arar
+    bulunanlar = re.findall(r"([0-3]\.\d{2}|4\.00)", text)
+    if bulunanlar:
+        # Genellikle transkriptin sonundaki en güncel ortalamayı almak için sonuncuyu seçeriz
+        return float(bulunanlar[-1])
+    return None
 
-st.divider()
-
-# Kullanıcı Bilgileri
-st.info("Lütfen güncel transkriptinizi PDF formatında yükleyin ve GANO bilginizi girin.")
-
-uploaded_file = st.file_uploader("Transkriptinizi Yükleyin (PDF)", type=["pdf"])
-gano = st.number_input("GANO (Genel Akademik Not Ortalaması):", 
-                       min_value=0.0, max_value=4.0, step=0.01, format="%.2f")
-
-# İndirim Kodu Üretici
 def kod_uret(yuzde):
-    # İlk 6 hane rastgele büyük harf ve rakam
     karakterler = string.ascii_uppercase + string.digits
-    rastgele_kisim = ''.join(random.choices(karakterler, k=6))
-    # Toplam 8 hane: 6 hane rastgele + 2 hane indirim yüzdesi
-    return f"{rastgele_kisim}{yuzde}"
+    rastgele = ''.join(random.choices(karakterler, k=6))
+    return f"{rastgele}{yuzde}"
 
-# Hesaplama ve Sonuç
-if st.button("İndirim Kodumu Oluştur"):
-    if uploaded_file is not None:
-        indirim_orani = 0
+st.title("🎓 GanoPort")
+st.subheader("Otomatik Transkript Doğrulama Sistemi")
+
+uploaded_file = st.file_uploader("Lütfen PDF formatındaki transkriptinizi buraya sürükleyin", type="pdf")
+
+if uploaded_file is not None:
+    with st.spinner('Belgeniz analiz ediliyor, lütfen bekleyin...'):
+        gano = gano_bul(uploaded_file)
         
-        # Senin belirttiğin kriterler:
-        if 2.50 <= gano < 3.00:
-            indirim_orani = 10
-        elif 3.00 <= gano < 3.50:
-            indirim_orani = 20
-        elif 3.50 <= gano <= 4.00:
-            indirim_orani = 30
+    if gano:
+        st.info(f"✅ Sistem tarafından tespit edilen GANO: **{gano}**")
         
-        if indirim_orani > 0:
-            ozel_kod = kod_uret(indirim_orani)
-            st.balloons() # Tebrik efekti
-            st.success(f"Tebrikler! GANO puanınıza göre %{indirim_orani} indirim kazandınız.")
-            
-            # Kodun büyük ve kopyalanabilir görünmesi için kutu içine alıyoruz
-            st.code(ozel_kod, language="text")
-            
-            st.write(f"**Kod Detayları:**")
-            st.write(f"* İndirim Oranı: %{indirim_orani}")
-            st.write(f"* Kullanım Alanı: İşbirlikçi Yurt Dışı Danışmanlık Firması")
-            st.caption("Not: Kodun son iki hanesi indirim yüzdenizi temsil etmektedir.")
+        indirim = 0
+        if 2.50 <= gano < 3.00: indirim = 10
+        elif 3.00 <= gano < 3.50: indirim = 20
+        elif 3.50 <= gano <= 4.00: indirim = 30
+        
+        if indirim > 0:
+            st.balloons()
+            st.success(f"Tebrikler! %{indirim} indirim kazandınız.")
+            st.code(kod_uret(indirim), language="text")
         else:
-            st.error("Üzgünüz, indirim koduna hak kazanmak için GANO'nun en az 2.50 olması gerekmektedir.")
+            st.error("GANO puanınız 2.50 altında olduğu için indirim tanımlanamadı.")
     else:
-        st.warning("Lütfen geçerli bir transkript dosyası yüklediğinizden emin olun.")
+        st.error("Maalesef PDF içinde GANO bilgisi otomatik tespit edilemedi. Lütfen net bir transkript yükleyin.")
 
 st.divider()
-st.caption("© 2026 GanoPort - Toplumsal Destek Projeleri")
+st.caption("GanoPort - Toplumsal Destek Projesi © 2026")
