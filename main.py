@@ -4,33 +4,33 @@ import re
 import random
 import string
 
-st.set_page_config(page_title="GanoPort | Akdeniz Uni Özel", page_icon="🎓")
+st.set_page_config(page_title="GanoPort | Akdeniz Uni Kesin Çözüm", page_icon="🎓")
 
 def gano_bul(pdf_dosyasi):
     try:
         with pdfplumber.open(pdf_dosyasi) as pdf:
-            # Akdeniz transkriptinde genel GANO her zaman ilk sayfadaki kimlik tablosundadır.
+            # Akdeniz Uni formatında güncel GANO her zaman ilk sayfadaki kimlik kısmındadır.
             first_page = pdf.pages[0]
             text = first_page.extract_text()
             
             if text:
-                # Sayıları işlemek için virgülleri noktaya çevir (Örn: 2,77 -> 2.77)
+                # Sayısal işlemler için virgülleri noktaya çevir (Örn: 2,77 -> 2.77) 
                 text = text.replace(',', '.')
                 
-                # NOKTA ATIŞI: "Ayrılış Tarihi/Öğrenim Durumu" satırının altındaki 
-                # ": 150/3.17/83.4" benzeri yapıyı arar. 
-                # Buradaki ortadaki sayı (3.17) gerçek genel ortalamadır.
-                akdeniz_kalibi = re.search(r":\s*\d+/([0-4][\.]\d{1,2})/", text)
+                # KRİTİK FİLTRE: Doğrudan resmi özet satırını hedef alıyoruz.
+                # Bu satır Alp'te ": 150/2.77/75.4" ve Yunus'ta ": 150/3.17/83.4" şeklindedir.
+                # Regex açıklaması: İki eğik çizgi (/) arasındaki 0-4 arası rakamı yakalar.
+                ozel_kalip = re.search(r"Top\.Krd/GANO/Yüzlük Not\s*:\s*\d+/([0-4][\.]\d{1,2})/", text)
                 
-                if akdeniz_kalibi:
-                    return float(akdeniz_kalibi.group(1))
+                if ozel_kalip:
+                    return float(ozel_kalip.group(1))
                 
-                # Eğer yukarıdaki özel yapı bulunamazsa (farklı bir transkriptse), 
-                # GANO kelimesini içeren satırları bul ve EN SONUNCUYU (en günceli) al.
-                fallback_ganos = re.findall(r"GANO\s*[:\s]*([0-4][\.]\d{1,2})", text, re.IGNORECASE)
-                if fallback_ganos:
-                    # Genellikle transkriptin sonunda veya başında en güncel değer yer alır.
-                    return float(fallback_ganos[0]) # Kimlik kısmındaki değere öncelik verir.
+                # EĞER YUKARIDAKİ BULUNAMAZSA (Farklı Versiyon): 
+                # "GANO" kelimesini ara ama "DNO" (Dönem Notu) olanları ele.
+                temiz_ganos = re.findall(r"(?<!D)GANO\s*[:\s]*([0-4][\.]\d{1,2})", text, re.IGNORECASE)
+                if temiz_ganos:
+                    # İlk sayfadaki ilk GANO genellikle en resmi olandır.
+                    return float(temiz_ganos[0])
                     
     except Exception:
         return None
@@ -42,16 +42,15 @@ def kod_uret(yuzde):
 
 st.title("🎓 GanoPort")
 st.subheader("Otomatik Transkript Doğrulama Sistemi")
-st.write("Akdeniz Üniversitesi resmi formatı için optimize edildi.")
 
-uploaded_file = st.file_uploader("Transkript PDF'inizi yükleyin", type="pdf")
+uploaded_file = st.file_uploader("Transkriptinizi (PDF) yükleyin", type="pdf")
 
 if uploaded_file is not None:
-    with st.spinner('Veri doğrulanıyor...'):
+    with st.spinner('Doğrulama yapılıyor...'):
         gano = gano_bul(uploaded_file)
         
     if gano is not None:
-        st.info(f"✅ Doğrulanan Genel Ortalama (GANO): **{gano}**")
+        st.info(f"✅ Resmi GANO Doğrulandı: **{gano}**")
         
         indirim = 0
         if 2.50 <= gano < 3.00: indirim = 10
@@ -60,12 +59,12 @@ if uploaded_file is not None:
         
         if indirim > 0:
             st.balloons()
-            st.success(f"Tebrikler! %{indirim} indirim kazandınız.")
+            st.success(f"Tebrikler! %{indirim} indirim kodunuz oluşturuldu.")
             st.code(kod_uret(indirim), language="text")
         else:
-            st.error(f"GANO ({gano}) 2.50 sınırının altında olduğu için kod tanımlanamadı.")
+            st.warning(f"GANO ({gano}) indirim alt sınırının (2.50) altında.")
     else:
-        st.error("GANO tespit edilemedi. Lütfen orijinal, taranmamış bir PDF yüklediğinizden emin olun.")
+        st.error("GANO bilgisi tespit edilemedi. Lütfen orijinal PDF yükleyin.")
 
 st.divider()
 st.caption("GanoPort - Toplumsal Destek Projesi © 2026")
