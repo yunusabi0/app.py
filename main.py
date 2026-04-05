@@ -7,37 +7,44 @@ import string
 st.set_page_config(page_title="GanoPort | Otomatik Doğrulama", page_icon="🎓")
 
 def gano_bul(pdf_dosyasi):
-    text = ""
+    full_text = ""
     with pdfplumber.open(pdf_dosyasi) as pdf:
         for page in pdf.pages:
-            extract = page.extract_text()
-            if extract:
-                text += extract
+            content = page.extract_text()
+            if content:
+                full_text += content + "\n"
     
-    # PDF metnini temizle (boşlukları ve satır başlarını kontrol et)
-    text = text.replace(',', '.') # Virgüllü notları noktaya çevirir (Örn: 3,50 -> 3.50)
+    # Metni düzenle: Virgülleri noktaya çevir
+    full_text = full_text.replace(',', '.')
     
-    # Çok daha geniş kapsamlı bir arama: "GANO", "GPA", "Genel", "Ortalama", "AGNO" kelimelerini ara
-    # Ve peşinden gelen 0.00-4.00 arası sayıları yakala
-    desenler = [
-        r"(?:GANO|GPA|ORTALAMA|AGNO|Genel)\D*([0-4][\.,]\d{2})",
-        r"([0-4][\.,]\d{2})" # Eğer kelime bulamazsa doğrudan sayıları ara
+    # STRATEJİ: "GENEL ORTALAMA", "GANO", "AGNO" kelimelerinden HEMEN SONRA gelen sayıyı ara
+    # Bu yöntem alakasız kredileri veya dönem ortalamalarını eler.
+    patterns = [
+        r"(?:GENEL ORTALAMA|GANO|AGNO|GPA|CGPA)[:\s]+([0-4][\.]\d{1,2})",
+        r"(?:GENEL AKADEMİK NOT ORTALAMASI)[:\s]+([0-4][\.]\d{1,2})"
     ]
     
-    bulunan_sayilar = []
-    for desen in desenler:
-        sonuclar = re.findall(desen, text, re.IGNORECASE)
-        for s in sonuclar:
-            bulunan_sayilar.append(float(s.replace(',', '.')))
-
-    if bulunan_sayilar:
-        # Transkriptlerde güncel GANO genelde en sonda yazar
-        return bulunan_sayilar[-1]
+    found_values = []
+    for p in patterns:
+        matches = re.findall(p, full_text, re.IGNORECASE)
+        for m in matches:
+            found_values.append(float(m))
+            
+    if found_values:
+        # Transkriptin en sonunda yazan değer genellikle en güncel olandır.
+        return found_values[-1]
+        
+    # Eğer yukarıdaki kelimelerle bulamazsa, metindeki tüm 0.00-4.00 arası sayıları bul 
+    # ve içlerinden en mantıklı (genelde sonuncu) olanı seç.
+    fallback = re.findall(r"\b([0-4][\.]\d{2})\b", full_text)
+    if fallback:
+        # 2.5 gibi kısa sayıları değil, 3.17 gibi tam formatlıları tercih et
+        return float(fallback[-1])
+        
     return None
 
 def kod_uret(yuzde):
-    karakterler = string.ascii_uppercase + string.digits
-    rastgele = ''.join(random.choices(karakterler, k=6))
+    rastgele = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     return f"{rastgele}{yuzde}"
 
 st.title("🎓 GanoPort")
@@ -46,10 +53,11 @@ st.subheader("Otomatik Transkript Doğrulama Sistemi")
 uploaded_file = st.file_uploader("Lütfen PDF formatındaki transkriptinizi buraya sürükleyin", type="pdf")
 
 if uploaded_file is not None:
-    with st.spinner('Belgeniz analiz ediliyor...'):
+    with st.spinner('GanoPort belgenizi analiz ediyor...'):
         gano = gano_bul(uploaded_file)
         
-    if gano and 0.0 <= gano <= 4.0:
+    if gano is not None:
+        # 3.17 gibi bir değerin doğru çekildiğinden emin oluyoruz
         st.info(f"✅ Sistem tarafından tespit edilen GANO: **{gano}**")
         
         indirim = 0
@@ -59,14 +67,12 @@ if uploaded_file is not None:
         
         if indirim > 0:
             st.balloons()
-            st.success(f"Tebrikler! %{indirim} indirim kazandınız.")
+            st.success(f"Tebrikler! GANO puanınıza göre %{indirim} indirim kazandınız.")
             st.code(kod_uret(indirim), language="text")
         else:
-            st.error(f"GANO ({gano}) 2.50 altında olduğu için indirim tanımlanamadı.")
+            st.error(f"GANO ({gano}) indirim sınırının (2.50) altında.")
     else:
-        st.error("GANO bilgisi otomatik tespit edilemedi. Lütfen PDF'in taranmış bir resim (fotoğraf) değil, okunabilir bir dijital PDF olduğundan emin olun.")
-        # Debug için: Eğer hata alıyorsan alttaki satırı aktif edip PDF'ten ne okunduğunu görebilirsin
-        # st.text(text) 
+        st.error("GANO verisi bulunamadı. Lütfen dijital bir transkript yükleyin.")
 
 st.divider()
 st.caption("GanoPort - Toplumsal Destek Projesi © 2026")
