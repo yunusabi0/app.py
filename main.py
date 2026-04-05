@@ -122,4 +122,8 @@ if uploaded_file is not None:
 
 
 st.divider()
-st.caption("GanoPort - Toplumsal Destek Projesi © 2026")
+
+st.markdown(
+    'Bu site **Toplumsal Destek Projeleri** dersi kapsamında '
+    '[İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır.'
+)
