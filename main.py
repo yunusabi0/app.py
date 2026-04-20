@@ -6,12 +6,6 @@ import sqlite3
 
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
-# ----------------------------
-
-# VERİTABANI
-
-# ----------------------------
-
 conn = sqlite3.connect("gano.db", check_same_thread=False)
 c = conn.cursor()
 
@@ -19,14 +13,10 @@ c.execute("CREATE TABLE IF NOT EXISTS kullanilan_pdfler (hash TEXT PRIMARY KEY)"
 c.execute("CREATE TABLE IF NOT EXISTS kodlar (kod TEXT PRIMARY KEY, kullanildi INTEGER DEFAULT 0)")
 conn.commit()
 
-# ----------------------------
-
 # KODLARI EKLE
 
-# ----------------------------
-
-for i in range(1,101):
-for tip in [20,30,40]:
+for i in range(1, 101):
+for tip in [20, 30, 40]:
 kod = f"GNP{str(i).zfill(3)}{tip}"
 try:
 c.execute("INSERT INTO kodlar (kod) VALUES (?)", (kod,))
@@ -34,20 +24,8 @@ except:
 pass
 conn.commit()
 
-# ----------------------------
-
-# PDF HASH
-
-# ----------------------------
-
 def pdf_hash(file):
 return hashlib.md5(file.getvalue()).hexdigest()
-
-# ----------------------------
-
-# KOD VER
-
-# ----------------------------
 
 def kod_al(indirim, pdf):
 hash_degeri = pdf_hash(pdf)
@@ -71,12 +49,6 @@ conn.commit()
 
 return kod
 ```
-
-# ----------------------------
-
-# GANO OKUMA
-
-# ----------------------------
 
 def gano_bul(pdf_dosyasi):
 try:
@@ -103,12 +75,6 @@ except:
     return None
 return None
 ```
-
-# ----------------------------
-
-# ARAYÜZ
-
-# ----------------------------
 
 st.title("🎓 GanoPort")
 st.subheader("Otomatik Transkript Doğrulama Sistemi")
