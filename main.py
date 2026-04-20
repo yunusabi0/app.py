@@ -5,7 +5,7 @@ import re
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
 # ----------------------------
-# ARKA PLAN + TASARIM
+# TAM TASARIM OVERRIDE (KESİN ÇÖZÜM)
 # ----------------------------
 st.markdown(
     """
@@ -23,28 +23,39 @@ st.markdown(
         border-radius: 15px;
     }
 
-    /* FILE UPLOADER (SİYAH KISMI DÜZELTİR) */
-    section[data-testid="stFileUploader"] > div {
-        background-color: #2c2f36 !important;  /* koyu gri */
-        border: 1px solid #3a3f47 !important;
+    /* TÜM FILE UPLOADER KAPSAYICI */
+    [data-testid="stFileUploader"] {
+        background-color: #2c2f36 !important;
         border-radius: 12px !important;
+        padding: 15px !important;
+        border: 1px solid #3a3f47 !important;
     }
 
-    section[data-testid="stFileUploader"] label {
-        color: #e0e0e0 !important;
+    /* İÇ KUTU */
+    [data-testid="stFileUploader"] div {
+        background-color: transparent !important;
     }
 
-    /* Upload butonu */
-    section[data-testid="stFileUploader"] button {
-        background-color: #1f2a44 !important; /* lacivert */
+    /* BUTON */
+    [data-testid="stFileUploader"] button {
+        background-color: #1f2a44 !important;
         color: white !important;
         border-radius: 8px !important;
+        border: none !important;
     }
 
-    /* Yazılar */
-    section[data-testid="stFileUploader"] small {
-        color: #b0b3b8 !important;
+    /* YAZILAR */
+    [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] small,
+    [data-testid="stFileUploader"] label {
+        color: #d1d5db !important;
     }
+
+    /* HOVER */
+    [data-testid="stFileUploader"]:hover {
+        border: 1px solid #4b5563 !important;
+    }
+
     </style>
     """,
     unsafe_allow_html=True
@@ -81,16 +92,12 @@ def gano_bul(pdf_dosyasi):
                 if "Top.Krd/GANO" in line:
                     match = re.search(r"\d+\s*/\s*([0-4]\.\d{1,2})\s*/", line)
                     if match:
-                        gano = float(match.group(1))
-                        if 0 <= gano <= 4:
-                            return gano
+                        return float(match.group(1))
             
             match = re.search(r"GANO\s*[: ]\s*([0-4]\.\d{1,2})", text, re.IGNORECASE)
             if match:
-                gano = float(match.group(1))
-                if 0 <= gano <= 4:
-                    return gano
-    except Exception:
+                return float(match.group(1))
+    except:
         return None
     return None
 
