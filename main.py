@@ -1,6 +1,7 @@
 import streamlit as st
 import pdfplumber
 import re
+import hashlib
 
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
@@ -43,14 +44,23 @@ def tum_kodlar():
 if "kodlar" not in st.session_state:
     st.session_state.kodlar = tum_kodlar()
 
-if "verilen_kod" not in st.session_state:
-    st.session_state.verilen_kod = None
+if "kullanilan_pdfler" not in st.session_state:
+    st.session_state.kullanilan_pdfler = set()
+
+# ----------------------------
+# PDF HASH
+# ----------------------------
+def pdf_hash(file):
+    return hashlib.md5(file.getvalue()).hexdigest()
 
 # ----------------------------
 # KOD VER
 # ----------------------------
-def kod_al(indirim):
-    if st.session_state.verilen_kod is not None:
+def kod_al(indirim, pdf):
+    hash_degeri = pdf_hash(pdf)
+
+    # aynı PDF tekrar kullanılamaz
+    if hash_degeri in st.session_state.kullanilan_pdfler:
         return None
 
     uygun = [k for k in st.session_state.kodlar if k.endswith(str(indirim))]
@@ -61,7 +71,7 @@ def kod_al(indirim):
     kod = uygun[0]
 
     st.session_state.kodlar.remove(kod)
-    st.session_state.verilen_kod = kod
+    st.session_state.kullanilan_pdfler.add(hash_degeri)
 
     return kod
 
@@ -116,14 +126,14 @@ if uploaded_file is not None:
             indirim = 40
 
         if indirim > 0:
-            kod = kod_al(indirim)
+            kod = kod_al(indirim, uploaded_file)
 
             if kod:
                 st.balloons()
                 st.success(f"%{indirim} indirim kazandınız!")
                 st.code(kod)
             else:
-                st.error("Kod verilemedi (zaten alındı veya tükendi).")
+                st.error("Bu transkript için zaten kod alınmış veya kod kalmamış.")
         else:
             st.warning("İndirim için GANO yetersiz.")
     else:
