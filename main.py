@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import pdfplumber
 import re
@@ -6,69 +7,62 @@ import base64
 
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
+DOSYA_YOLU = "gnp_indirim_kodlari.txt"
+
 # ----------------------------
-# ARKA PLAN + PREMIUM UI
+# ARKA PLAN
 # ----------------------------
 def set_bg():
-    url = "https://images.pexels.com/photos/14433882/pexels-photo-14433882.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-    
+    url = "https://images.pexels.com/photos/14433882/pexels-photo-14433882.jpeg"
     response = requests.get(url)
     encoded = base64.b64encode(response.content).decode()
 
-    st.markdown(
-        f"""
-        <style>
-        [data-testid="stAppViewContainer"] {{
-            background-image: url("data:image/jpg;base64,{encoded}");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }}
+    st.markdown(f"""
+    <style>
+    [data-testid="stAppViewContainer"] {{
+        background-image: url("data:image/jpg;base64,{encoded}");
+        background-size: cover;
+    }}
 
-        /* CAM KUTU - GÜNCELLENDİ */
-        .block-container {{
-            background: rgba(30, 35, 50, 0.72);
-            padding: 2rem;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.08);
-        }}
+    .block-container {{
+        background: rgba(30,35,50,0.72);
+        padding: 2rem;
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+    }}
 
-        /* YAZILAR */
-        h1, h2, h3, p, label {{
-            color: white !important;
-        }}
-
-        /* UPLOAD KUTUSU */
-        [data-testid="stFileUploader"] {{
-            background: rgba(255,255,255,0.08);
-            padding: 10px;
-            border-radius: 10px;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    h1, h2, h3, p, label {{
+        color: white !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 set_bg()
 
 # ----------------------------
-# 300 KOD HAZIR HAVUZ
+# TXT'DEN KOD OKU + SİL
 # ----------------------------
-kod_havuzu = {
-    "10": [f"ILZ{str(i).zfill(3)}10" for i in range(1,101)],
-    "20": [f"ILZ{str(i).zfill(3)}20" for i in range(1,101)],
-    "30": [f"ILZ{str(i).zfill(3)}30" for i in range(1,101)]
-}
+def kod_al_ve_sil(indirim):
+    try:
+        with open(DOSYA_YOLU, "r") as f:
+            kodlar = f.read().splitlines()
 
-def kod_al(yuzde):
-    yuzde = str(yuzde)
-    if yuzde not in st.session_state:
-        st.session_state[yuzde] = kod_havuzu[yuzde].copy()
-    if len(st.session_state[yuzde]) == 0:
+        uygun_kodlar = [k for k in kodlar if k.endswith(str(indirim))]
+
+        if not uygun_kodlar:
+            return None
+
+        secilen = uygun_kodlar[0]
+
+        kodlar.remove(secilen)
+
+        with open(DOSYA_YOLU, "w") as f:
+            f.write("\n".join(kodlar))
+
+        return secilen
+
+    except:
         return None
-    return st.session_state[yuzde].pop(0)
 
 # ----------------------------
 # GANO OKUMA
@@ -93,7 +87,6 @@ def gano_bul(pdf_dosyasi):
             match = re.search(r"GANO\s*[: ]\s*([0-4]\.\d{1,2})", text, re.IGNORECASE)
             if match:
                 return float(match.group(1))
-
     except:
         return None
 
@@ -116,20 +109,21 @@ if uploaded_file:
 
         indirim = 0
         if 2.50 <= gano < 3.00:
-            indirim = 10
-        elif 3.00 <= gano < 3.50:
             indirim = 20
-        elif 3.50 <= gano <= 4.00:
+        elif 3.00 <= gano < 3.50:
             indirim = 30
+        elif 3.50 <= gano <= 4.00:
+            indirim = 40
 
         if indirim > 0:
-            kod = kod_al(indirim)
+            kod = kod_al_ve_sil(indirim)
+
             if kod:
                 st.balloons()
                 st.success(f"%{indirim} indirim kazandınız!")
                 st.code(kod)
             else:
-                st.error("Kodlar tükenmiş.")
+                st.error("Bu indirim için kod kalmamış.")
         else:
             st.warning("İndirim için GANO düşük.")
 
@@ -138,6 +132,5 @@ if uploaded_file:
 
 st.divider()
 
-st.markdown(
-    "Bu site **Toplumsal Destek Projeleri** kapsamında [İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır."
-)
+st.markdown("Bu sistem İLAZDO işbirliği ile geliştirilmiştir.")
+```
