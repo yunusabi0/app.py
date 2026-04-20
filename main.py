@@ -7,7 +7,7 @@ import base64
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
 # ----------------------------
-# ARKA PLAN (PEXELS GÜNCEL)
+# ARKA PLAN + PREMIUM UI
 # ----------------------------
 def set_bg():
     url = "https://images.pexels.com/photos/14433882/pexels-photo-14433882.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
@@ -26,10 +26,25 @@ def set_bg():
             background-attachment: fixed;
         }}
 
+        /* CAM KUTU - GÜNCELLENDİ */
         .block-container {{
-            background-color: rgba(255,255,255,0.85);
+            background: rgba(30, 35, 50, 0.72);
             padding: 2rem;
-            border-radius: 15px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+        }}
+
+        /* YAZILAR */
+        h1, h2, h3, p, label {{
+            color: white !important;
+        }}
+
+        /* UPLOAD KUTUSU */
+        [data-testid="stFileUploader"] {{
+            background: rgba(255,255,255,0.08);
+            padding: 10px;
+            border-radius: 10px;
         }}
         </style>
         """,
@@ -47,9 +62,6 @@ kod_havuzu = {
     "30": [f"ILZ{str(i).zfill(3)}30" for i in range(1,101)]
 }
 
-# ----------------------------
-# KOD ALMA FONKSİYONU
-# ----------------------------
 def kod_al(yuzde):
     yuzde = str(yuzde)
     if yuzde not in st.session_state:
@@ -59,33 +71,32 @@ def kod_al(yuzde):
     return st.session_state[yuzde].pop(0)
 
 # ----------------------------
-# GANO OKUMA FONKSİYONU
+# GANO OKUMA
 # ----------------------------
 def gano_bul(pdf_dosyasi):
     try:
         with pdfplumber.open(pdf_dosyasi) as pdf:
-            text=""
+            text = ""
             for page in pdf.pages:
                 t = page.extract_text()
                 if t:
                     text += t + "\n"
+
             text = text.replace(",", ".")
-            
+
             for line in text.split("\n"):
                 if "Top.Krd/GANO" in line:
                     match = re.search(r"\d+\s*/\s*([0-4]\.\d{1,2})\s*/", line)
                     if match:
-                        gano = float(match.group(1))
-                        if 0 <= gano <= 4:
-                            return gano
+                        return float(match.group(1))
 
             match = re.search(r"GANO\s*[: ]\s*([0-4]\.\d{1,2})", text, re.IGNORECASE)
             if match:
-                gano = float(match.group(1))
-                if 0 <= gano <= 4:
-                    return gano
-    except Exception:
+                return float(match.group(1))
+
+    except:
         return None
+
     return None
 
 # ----------------------------
@@ -96,14 +107,14 @@ st.subheader("Otomatik Transkript Doğrulama Sistemi")
 
 uploaded_file = st.file_uploader("Transkript PDF yükleyin", type="pdf")
 
-if uploaded_file is not None:
-    with st.spinner("Transkript analiz ediliyor..."):
+if uploaded_file:
+    with st.spinner("Analiz ediliyor..."):
         gano = gano_bul(uploaded_file)
 
     if gano is not None:
-        st.success(f"Doğrulanan GANO: **{gano}**")
-        indirim = 0
+        st.success(f"GANO: **{gano}**")
 
+        indirim = 0
         if 2.50 <= gano < 3.00:
             indirim = 10
         elif 3.00 <= gano < 3.50:
@@ -113,20 +124,20 @@ if uploaded_file is not None:
 
         if indirim > 0:
             kod = kod_al(indirim)
-            if kod is None:
-                st.error("Bu indirim kategorisindeki kodlar tükenmiştir.")
-            else:
+            if kod:
                 st.balloons()
-                st.success(f"Tebrikler! %{indirim} indirim kazandınız.")
+                st.success(f"%{indirim} indirim kazandınız!")
                 st.code(kod)
+            else:
+                st.error("Kodlar tükenmiş.")
         else:
-            st.warning(f"GANO ({gano}) indirim için alt sınır olan 2.50'nin altında.")
+            st.warning("İndirim için GANO düşük.")
+
     else:
-        st.error("GANO tespit edilemedi. Lütfen orijinal transkript yükleyin.")
+        st.error("GANO bulunamadı.")
 
 st.divider()
 
 st.markdown(
-    'Bu site **Toplumsal Destek Projeleri** dersi kapsamında '
-    '[İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır.'
+    "Bu site **Toplumsal Destek Projeleri** kapsamında [İLAZDO](https://ilazdo.com/) ile hazırlanmıştır."
 )
