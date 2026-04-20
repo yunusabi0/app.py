@@ -5,82 +5,53 @@ import re
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
 # ----------------------------
-# ARKA PLAN
+# 300 KOD HAZIR HAVUZ
 # ----------------------------
-def set_bg():
-    st.markdown("""
-    <style>
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #1e2332, #2b5876);
-    }
-
-    .block-container {
-        background: rgba(30,35,50,0.72);
-        padding: 2rem;
-        border-radius: 16px;
-        backdrop-filter: blur(10px);
-    }
-
-    h1, h2, h3, p, label {
-        color: white !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-set_bg()
+kod_havuzu = {
+    "10": [f"ILZ{str(i).zfill(3)}10" for i in range(1,101)],
+    "20": [f"ILZ{str(i).zfill(3)}20" for i in range(1,101)],
+    "30": [f"ILZ{str(i).zfill(3)}30" for i in range(1,101)]
+}
 
 # ----------------------------
-# TÜM KODLARI OTOMATİK OLUŞTUR
+# KOD ALMA FONKSİYONU
 # ----------------------------
-def tum_kodlari_olustur():
-    kodlar = []
-
-    for indirim in [20, 30, 40]:
-        for i in range(1, 101):
-            kod = f"GNP{str(i).zfill(3)}{indirim}"
-            kodlar.append(kod)
-
-    return kodlar
-
-if "kodlar" not in st.session_state:
-    st.session_state.kodlar = tum_kodlari_olustur()
+def kod_al(yuzde):
+    yuzde = str(yuzde)
+    if yuzde not in st.session_state:
+        st.session_state[yuzde] = kod_havuzu[yuzde].copy()
+    if len(st.session_state[yuzde]) == 0:
+        return None
+    return st.session_state[yuzde].pop(0)
 
 # ----------------------------
-# KOD SEÇ
-# ----------------------------
-def kod_al(indirim):
-    for k in st.session_state.kodlar:
-        if k.endswith(str(indirim)):
-            st.session_state.kodlar.remove(k)
-            return k
-    return None
-
-# ----------------------------
-# GANO OKUMA
+# GANO OKUMA FONKSİYONU (DOKUNMADIK)
 # ----------------------------
 def gano_bul(pdf_dosyasi):
     try:
         with pdfplumber.open(pdf_dosyasi) as pdf:
-            text = ""
+            text=""
             for page in pdf.pages:
                 t = page.extract_text()
                 if t:
                     text += t + "\n"
-
             text = text.replace(",", ".")
-
+            # Öncelikli: Top.Krd/GANO satırı
             for line in text.split("\n"):
                 if "Top.Krd/GANO" in line:
                     match = re.search(r"\d+\s*/\s*([0-4]\.\d{1,2})\s*/", line)
                     if match:
-                        return float(match.group(1))
-
+                        gano = float(match.group(1))
+                        if 0 <= gano <= 4:
+                            return gano
+            # Yedek: DNO olmayan ilk GANO
             match = re.search(r"GANO\s*[: ]\s*([0-4]\.\d{1,2})", text, re.IGNORECASE)
             if match:
-                return float(match.group(1))
-    except:
+                gano = float(match.group(1))
+                if 0 <= gano <= 4:
+                    return gano
+    except Exception:
         return None
-
     return None
 
 # ----------------------------
@@ -91,35 +62,36 @@ st.subheader("Otomatik Transkript Doğrulama Sistemi")
 
 uploaded_file = st.file_uploader("Transkript PDF yükleyin", type="pdf")
 
-if uploaded_file:
-    with st.spinner("Analiz ediliyor..."):
+if uploaded_file is not None:
+    with st.spinner("Transkript analiz ediliyor..."):
         gano = gano_bul(uploaded_file)
 
     if gano is not None:
-        st.success(f"GANO: **{gano}**")
-
+        st.success(f"Doğrulanan GANO: **{gano}**")
         indirim = 0
         if 2.50 <= gano < 3.00:
-            indirim = 20
+            indirim = 10
         elif 3.00 <= gano < 3.50:
-            indirim = 30
+            indirim = 20
         elif 3.50 <= gano <= 4.00:
-            indirim = 40
+            indirim = 30
 
         if indirim > 0:
             kod = kod_al(indirim)
-
-            if kod:
-                st.balloons()
-                st.success(f"%{indirim} indirim kazandınız!")
-                st.code(kod)
+            if kod is None:
+                st.error("Bu indirim kategorisindeki kodlar tükenmiştir.")
             else:
-                st.error("Kod kalmamış.")
+                st.balloons()
+                st.success(f"Tebrikler! %{indirim} indirim kazandınız.")
+                st.code(kod)
         else:
-            st.warning("İndirim için GANO düşük.")
-
+            st.warning(f"GANO ({gano}) indirim için alt sınır olan 2.50'nin altında.")
     else:
-        st.error("GANO bulunamadı.")
+        st.error("GANO tespit edilemedi. Lütfen orijinal transkript yükleyin.")
 
 st.divider()
-st.markdown("Bu sistem İLAZDO işbirliği ile geliştirilmiştir.")
+
+st.markdown(
+    'Bu site **Toplumsal Destek Projeleri** dersi kapsamında '
+    '[İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır.'
+)
