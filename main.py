@@ -15,75 +15,24 @@ st.set_page_config(page_title="GanoPort", page_icon="🎓")
 conn = sqlite3.connect("gano.db", check_same_thread=False)
 c = conn.cursor()
 
-c.execute("""
-CREATE TABLE IF NOT EXISTS kullanilan_pdfler (
-hash TEXT PRIMARY KEY
-)
-""")
-
-c.execute("""
-CREATE TABLE IF NOT EXISTS kodlar (
-kod TEXT PRIMARY KEY,
-kullanildi INTEGER DEFAULT 0
-)
-""")
-
+c.execute("CREATE TABLE IF NOT EXISTS kullanilan_pdfler (hash TEXT PRIMARY KEY)")
+c.execute("CREATE TABLE IF NOT EXISTS kodlar (kod TEXT PRIMARY KEY, kullanildi INTEGER DEFAULT 0)")
 conn.commit()
 
 # ----------------------------
 
-# TASARIM
+# KODLARI EKLE
 
 # ----------------------------
 
-st.markdown("""
-
-<style>
-.stApp {
-    background-image: url("https://tr.key.study/wp-content/uploads/2025/02/1-1.jpg");
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-}
-
-.block-container {
-    background: rgba(20, 25, 40, 0.85);
-    padding: 2rem;
-    border-radius: 18px;
-    color: #e5e7eb;
-}
-</style>
-
-""", unsafe_allow_html=True)
-
-# ----------------------------
-
-# KOD ÜRET
-
-# ----------------------------
-
-def tum_kodlar():
-return (
-[f"GNP{str(i).zfill(3)}20" for i in range(1,101)] +
-[f"GNP{str(i).zfill(3)}30" for i in range(1,101)] +
-[f"GNP{str(i).zfill(3)}40" for i in range(1,101)]
-)
-
-# ----------------------------
-
-# İLK YÜKLEME
-
-# ----------------------------
-
-def kodlari_ekle():
-for kod in tum_kodlar():
+for i in range(1,101):
+for tip in [20,30,40]:
+kod = f"GNP{str(i).zfill(3)}{tip}"
 try:
 c.execute("INSERT INTO kodlar (kod) VALUES (?)", (kod,))
 except:
 pass
 conn.commit()
-
-kodlari_ekle()
 
 # ----------------------------
 
@@ -104,17 +53,13 @@ def kod_al(indirim, pdf):
 hash_degeri = pdf_hash(pdf)
 
 ```
-c.execute("SELECT * FROM kullanilan_pdfler WHERE hash=?", (hash_degeri,))
+c.execute("SELECT 1 FROM kullanilan_pdfler WHERE hash=?", (hash_degeri,))
 if c.fetchone():
     return None
 
-c.execute("""
-    SELECT kod FROM kodlar 
-    WHERE kullanildi=0 AND kod LIKE ?
-    LIMIT 1
-""", (f"%{indirim}",))
-
+c.execute("SELECT kod FROM kodlar WHERE kullanildi=0 AND kod LIKE ? LIMIT 1", (f"%{indirim}",))
 sonuc = c.fetchone()
+
 if not sonuc:
     return None
 
@@ -200,10 +145,3 @@ if gano is not None:
 else:
     st.error("GANO okunamadı.")
 ```
-
-st.divider()
-
-st.markdown(
-'Bu site **Toplumsal Destek Projeleri** dersi kapsamında '
-'[İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır.'
-)
