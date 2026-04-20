@@ -139,5 +139,5 @@ if uploaded_file:
 st.divider()
 
 st.markdown(
-    "Bu site **Toplumsal Destek Projeleri** kapsamında [İLAZDO](https://ilazdo.com/) ile hazırlanmıştır."
+    "Bu site **Toplumsal Destek Projeleri** kapsamında [İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır."
 )
