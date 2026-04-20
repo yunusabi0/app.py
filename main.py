@@ -7,29 +7,25 @@ st.set_page_config(page_title="GanoPort", page_icon="🎓")
 # ----------------------------
 # ARKA PLAN FOTOĞRAF
 # ----------------------------
-def set_bg(image_url):
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background-image: url("{image_url}");
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }}
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-image: url("https://tr.key.study/wp-content/uploads/2025/02/1-1.jpg");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
 
-        .block-container {{
-            background-color: rgba(255,255,255,0.85);
-            padding: 2rem;
-            border-radius: 15px;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-# FOTOĞRAF LİNKİNİ BURAYA KOY
-set_bg("YOUR_IMAGE_URL")
+    .block-container {
+        background-color: rgba(255,255,255,0.85);
+        padding: 2rem;
+        border-radius: 15px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # ----------------------------
 # 300 KOD HAZIR HAVUZ
@@ -64,7 +60,6 @@ def gano_bul(pdf_dosyasi):
                     text += t + "\n"
             text = text.replace(",", ".")
             
-            # Öncelikli: Top.Krd/GANO
             for line in text.split("\n"):
                 if "Top.Krd/GANO" in line:
                     match = re.search(r"\d+\s*/\s*([0-4]\.\d{1,2})\s*/", line)
@@ -73,7 +68,6 @@ def gano_bul(pdf_dosyasi):
                         if 0 <= gano <= 4:
                             return gano
             
-            # Yedek
             match = re.search(r"GANO\s*[: ]\s*([0-4]\.\d{1,2})", text, re.IGNORECASE)
             if match:
                 gano = float(match.group(1))
