@@ -1,9 +1,32 @@
+```python
 import streamlit as st
 import pdfplumber
 import re
 import hashlib
+import sqlite3
 
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
+
+# ----------------------------
+# VERİTABANI
+# ----------------------------
+conn = sqlite3.connect("gano.db", check_same_thread=False)
+c = conn.cursor()
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS kullanilan_pdfler (
+    hash TEXT PRIMARY KEY
+)
+""")
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS kodlar (
+    kod TEXT PRIMARY KEY,
+    kullanildi INTEGER DEFAULT 0
+)
+""")
+
+conn.commit()
 
 # ----------------------------
 # TASARIM
@@ -27,7 +50,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# 300 KOD (20-30-40)
+# KOD ÜRET
 # ----------------------------
 def tum_kodlar():
     return [
@@ -39,13 +62,17 @@ def tum_kodlar():
     ]
 
 # ----------------------------
-# SESSION BAŞLAT
+# İLK YÜKLEME (kodları DB'ye at)
 # ----------------------------
-if "kodlar" not in st.session_state:
-    st.session_state.kodlar = tum_kodlar()
+def kodlari_ekle():
+    for kod in tum_kodlar():
+        try:
+            c.execute("INSERT INTO kodlar (kod) VALUES (?)", (kod,))
+        except:
+            pass
+    conn.commit()
 
-if "kullanilan_pdfler" not in st.session_state:
-    st.session_state.kullanilan_pdfler = set()
+kodlari_ekle()
 
 # ----------------------------
 # PDF HASH
@@ -59,19 +86,28 @@ def pdf_hash(file):
 def kod_al(indirim, pdf):
     hash_degeri = pdf_hash(pdf)
 
-    # aynı PDF tekrar kullanılamaz
-    if hash_degeri in st.session_state.kullanilan_pdfler:
+    # PDF daha önce kullanılmış mı?
+    c.execute("SELECT * FROM kullanilan_pdfler WHERE hash=?", (hash_degeri,))
+    if c.fetchone():
         return None
 
-    uygun = [k for k in st.session_state.kodlar if k.endswith(str(indirim))]
+    # uygun kod bul
+    c.execute("""
+        SELECT kod FROM kodlar 
+        WHERE kullanildi=0 AND kod LIKE ?
+        LIMIT 1
+    """, (f"%{indirim}",))
 
-    if not uygun:
+    sonuc = c.fetchone()
+    if not sonuc:
         return None
 
-    kod = uygun[0]
+    kod = sonuc[0]
 
-    st.session_state.kodlar.remove(kod)
-    st.session_state.kullanilan_pdfler.add(hash_degeri)
+    # kodu kullanıldı işaretle
+    c.execute("UPDATE kodlar SET kullanildi=1 WHERE kod=?", (kod,))
+    c.execute("INSERT INTO kullanilan_pdfler (hash) VALUES (?)", (hash_degeri,))
+    conn.commit()
 
     return kod
 
@@ -145,3 +181,4 @@ st.markdown(
     'Bu site **Toplumsal Destek Projeleri** dersi kapsamında '
     '[İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır.'
 )
+```
