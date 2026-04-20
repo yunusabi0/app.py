@@ -5,7 +5,7 @@ import re
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
 # ----------------------------
-# ARKA PLAN FOTOĞRAF
+# ARKA PLAN + TASARIM
 # ----------------------------
 st.markdown(
     """
@@ -18,9 +18,32 @@ st.markdown(
     }
 
     .block-container {
-        background-color: rgba(255,255,255,0.85);
+        background-color: rgba(240,242,246,0.9);
         padding: 2rem;
         border-radius: 15px;
+    }
+
+    /* FILE UPLOADER (SİYAH KISMI DÜZELTİR) */
+    section[data-testid="stFileUploader"] > div {
+        background-color: #2c2f36 !important;  /* koyu gri */
+        border: 1px solid #3a3f47 !important;
+        border-radius: 12px !important;
+    }
+
+    section[data-testid="stFileUploader"] label {
+        color: #e0e0e0 !important;
+    }
+
+    /* Upload butonu */
+    section[data-testid="stFileUploader"] button {
+        background-color: #1f2a44 !important; /* lacivert */
+        color: white !important;
+        border-radius: 8px !important;
+    }
+
+    /* Yazılar */
+    section[data-testid="stFileUploader"] small {
+        color: #b0b3b8 !important;
     }
     </style>
     """,
@@ -28,7 +51,7 @@ st.markdown(
 )
 
 # ----------------------------
-# 300 KOD HAZIR HAVUZ
+# 300 KOD HAVUZU
 # ----------------------------
 kod_havuzu = {
     "10": [f"ILZ{str(i).zfill(3)}10" for i in range(1,101)],
@@ -36,9 +59,6 @@ kod_havuzu = {
     "30": [f"ILZ{str(i).zfill(3)}30" for i in range(1,101)]
 }
 
-# ----------------------------
-# KOD ALMA FONKSİYONU
-# ----------------------------
 def kod_al(yuzde):
     yuzde = str(yuzde)
     if yuzde not in st.session_state:
@@ -47,9 +67,6 @@ def kod_al(yuzde):
         return None
     return st.session_state[yuzde].pop(0)
 
-# ----------------------------
-# GANO OKUMA FONKSİYONU
-# ----------------------------
 def gano_bul(pdf_dosyasi):
     try:
         with pdfplumber.open(pdf_dosyasi) as pdf:
