@@ -2,6 +2,7 @@ import streamlit as st
 import pdfplumber
 import re
 import hashlib
+import os
 
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
@@ -27,25 +28,36 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# 300 KOD (20-30-40)
+# DOSYA YOLLARI
 # ----------------------------
-def tum_kodlar():
-    return [
-        f"GNP{str(i).zfill(3)}20" for i in range(1,101)
-    ] + [
-        f"GNP{str(i).zfill(3)}30" for i in range(1,101)
-    ] + [
-        f"GNP{str(i).zfill(3)}40" for i in range(1,101)
-    ]
+KOD_DOSYA = "gnp_indirim_kodlari.txt"
+KULLANILAN_KOD_DOSYA = "kullanilan_kodlar.txt"
+PDF_DOSYA = "kullanilan_pdfler.txt"
 
 # ----------------------------
-# SESSION BAŞLAT
+# DOSYA YOKSA OLUŞTUR
 # ----------------------------
-if "kodlar" not in st.session_state:
-    st.session_state.kodlar = tum_kodlar()
+for dosya in [KULLANILAN_KOD_DOSYA, PDF_DOSYA]:
+    if not os.path.exists(dosya):
+        open(dosya, "w").close()
 
-if "kullanilan_pdfler" not in st.session_state:
-    st.session_state.kullanilan_pdfler = set()
+# ----------------------------
+# KODLARI YÜKLE
+# ----------------------------
+def kodlari_yukle():
+    with open(KOD_DOSYA, "r") as f:
+        return [line.strip() for line in f.readlines()]
+
+# ----------------------------
+# KULLANILAN KODLAR
+# ----------------------------
+def kullanilan_kodlari_getir():
+    with open(KULLANILAN_KOD_DOSYA, "r") as f:
+        return set(line.strip() for line in f.readlines())
+
+def kod_kaydet(kod):
+    with open(KULLANILAN_KOD_DOSYA, "a") as f:
+        f.write(kod + "\n")
 
 # ----------------------------
 # PDF HASH
@@ -54,24 +66,43 @@ def pdf_hash(file):
     return hashlib.md5(file.getvalue()).hexdigest()
 
 # ----------------------------
+# KULLANILAN PDF
+# ----------------------------
+def kullanilan_pdfleri_getir():
+    with open(PDF_DOSYA, "r") as f:
+        return set(line.strip() for line in f.readlines())
+
+def pdf_kaydet(hash_degeri):
+    with open(PDF_DOSYA, "a") as f:
+        f.write(hash_degeri + "\n")
+
+# ----------------------------
 # KOD VER
 # ----------------------------
 def kod_al(indirim, pdf):
     hash_degeri = pdf_hash(pdf)
 
+    kullanilan_pdfler = kullanilan_pdfleri_getir()
+    kullanilan_kodlar = kullanilan_kodlari_getir()
+    tum_kodlar = kodlari_yukle()
+
     # aynı PDF tekrar kullanılamaz
-    if hash_degeri in st.session_state.kullanilan_pdfler:
+    if hash_degeri in kullanilan_pdfler:
         return None
 
-    uygun = [k for k in st.session_state.kodlar if k.endswith(str(indirim))]
+    uygun_kodlar = [
+        k for k in tum_kodlar
+        if k.endswith(str(indirim)) and k not in kullanilan_kodlar
+    ]
 
-    if not uygun:
+    if not uygun_kodlar:
         return None
 
-    kod = uygun[0]
+    kod = uygun_kodlar[0]
 
-    st.session_state.kodlar.remove(kod)
-    st.session_state.kullanilan_pdfler.add(hash_degeri)
+    # kayıt
+    kod_kaydet(kod)
+    pdf_kaydet(hash_degeri)
 
     return kod
 
