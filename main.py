@@ -5,6 +5,33 @@ import re
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
 # ----------------------------
+# ARKA PLAN FOTOĞRAF
+# ----------------------------
+def set_bg(image_url):
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("{image_url}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }}
+
+        .block-container {{
+            background-color: rgba(255,255,255,0.85);
+            padding: 2rem;
+            border-radius: 15px;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# FOTOĞRAF LİNKİNİ BURAYA KOY
+set_bg("YOUR_IMAGE_URL")
+
+# ----------------------------
 # 300 KOD HAZIR HAVUZ
 # ----------------------------
 kod_havuzu = {
@@ -25,7 +52,7 @@ def kod_al(yuzde):
     return st.session_state[yuzde].pop(0)
 
 # ----------------------------
-# GANO OKUMA FONKSİYONU (DOKUNMADIK)
+# GANO OKUMA FONKSİYONU
 # ----------------------------
 def gano_bul(pdf_dosyasi):
     try:
@@ -36,7 +63,8 @@ def gano_bul(pdf_dosyasi):
                 if t:
                     text += t + "\n"
             text = text.replace(",", ".")
-            # Öncelikli: Top.Krd/GANO satırı
+            
+            # Öncelikli: Top.Krd/GANO
             for line in text.split("\n"):
                 if "Top.Krd/GANO" in line:
                     match = re.search(r"\d+\s*/\s*([0-4]\.\d{1,2})\s*/", line)
@@ -44,7 +72,8 @@ def gano_bul(pdf_dosyasi):
                         gano = float(match.group(1))
                         if 0 <= gano <= 4:
                             return gano
-            # Yedek: DNO olmayan ilk GANO
+            
+            # Yedek
             match = re.search(r"GANO\s*[: ]\s*([0-4]\.\d{1,2})", text, re.IGNORECASE)
             if match:
                 gano = float(match.group(1))
@@ -69,6 +98,7 @@ if uploaded_file is not None:
     if gano is not None:
         st.success(f"Doğrulanan GANO: **{gano}**")
         indirim = 0
+
         if 2.50 <= gano < 3.00:
             indirim = 10
         elif 3.00 <= gano < 3.50:
