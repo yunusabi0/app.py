@@ -5,7 +5,7 @@ import re
 st.set_page_config(page_title="GanoPort", page_icon="🎓")
 
 # ----------------------------
-# TAM TASARIM OVERRIDE (KESİN ÇÖZÜM)
+# TASARIM (DÜZELTİLDİ)
 # ----------------------------
 st.markdown(
     """
@@ -17,13 +17,15 @@ st.markdown(
         background-attachment: fixed;
     }
 
+    /* ANA KART (ARTIK KOYU LACİVERT-GRİ) */
     .block-container {
-        background-color: rgba(240,242,246,0.9);
+        background: rgba(20, 25, 40, 0.85);  /* 👈 BURASI DÜZELTİLDİ */
         padding: 2rem;
-        border-radius: 15px;
+        border-radius: 18px;
+        color: #e5e7eb;
     }
 
-    /* TÜM FILE UPLOADER KAPSAYICI */
+    /* TÜM FILE UPLOADER */
     [data-testid="stFileUploader"] {
         background-color: #2c2f36 !important;
         border-radius: 12px !important;
