@@ -63,13 +63,11 @@ st.markdown("""
 # ----------------------------
 
 def tum_kodlar():
-return [
-f"GNP{str(i).zfill(3)}20" for i in range(1,101)
-] + [
-f"GNP{str(i).zfill(3)}30" for i in range(1,101)
-] + [
-f"GNP{str(i).zfill(3)}40" for i in range(1,101)
-]
+return (
+[f"GNP{str(i).zfill(3)}20" for i in range(1,101)] +
+[f"GNP{str(i).zfill(3)}30" for i in range(1,101)] +
+[f"GNP{str(i).zfill(3)}40" for i in range(1,101)]
+)
 
 # ----------------------------
 
@@ -106,12 +104,10 @@ def kod_al(indirim, pdf):
 hash_degeri = pdf_hash(pdf)
 
 ```
-# Aynı PDF tekrar kullanılamaz
 c.execute("SELECT * FROM kullanilan_pdfler WHERE hash=?", (hash_degeri,))
 if c.fetchone():
     return None
 
-# Uygun kod bul
 c.execute("""
     SELECT kod FROM kodlar 
     WHERE kullanildi=0 AND kod LIKE ?
@@ -124,7 +120,6 @@ if not sonuc:
 
 kod = sonuc[0]
 
-# Kodu işaretle
 c.execute("UPDATE kodlar SET kullanildi=1 WHERE kod=?", (kod,))
 c.execute("INSERT INTO kullanilan_pdfler (hash) VALUES (?)", (hash_degeri,))
 conn.commit()
