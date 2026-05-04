@@ -189,5 +189,5 @@ st.markdown(
     '[İLAZDO](https://www.instagram.com/ilazdo?igsh=MTk2NHE5aDBiYTBkMA==) işbirliği sonucu hazırlanmıştır.'
 
     'Destek:ganoport@gmail.com '
-    'webmaster@ilazdo.com '
+    'ilazdodanismanlik@gmail.com '
 )
