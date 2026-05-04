@@ -187,5 +187,6 @@ st.divider()
 st.markdown(
     'Bu site **Toplumsal Destek Projeleri** dersi kapsamında '
     '[İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır.'
+
     'Destek:ganoport@gmail.com '
 )
