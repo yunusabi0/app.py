@@ -189,4 +189,5 @@ st.markdown(
     '[İLAZDO](https://ilazdo.com/) işbirliği sonucu hazırlanmıştır.'
 
     'Destek:ganoport@gmail.com '
+    'webmaster@ilazdo.com '
 )
